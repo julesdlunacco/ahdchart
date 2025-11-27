@@ -9,6 +9,7 @@ class AHD_Charts_Settings {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'wp_ajax_ahd_save_settings', array( $this, 'save_settings' ) );
+		add_action( 'wp_ajax_ahd_fix_wasm_mime', array( $this, 'fix_wasm_mime' ) );
 	}
 
 	public function add_admin_menu() {
@@ -58,12 +59,13 @@ class AHD_Charts_Settings {
 			}
 		}
 
-		$settings = get_option( 'ahd_chart_settings', array() );
-		$config   = array(
-			'settings' => $settings,
-			'nonce'    => wp_create_nonce( 'ahd_save_settings' ),
-			'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
-			'epheUrl'  => AHD_CHARTS_URL . 'assets/ephe/',
+		$settings    = get_option( 'ahd_chart_settings', array() );
+		$config      = array(
+			'settings'   => $settings,
+			'nonce'      => wp_create_nonce( 'ahd_save_settings' ),
+			'toolsNonce' => wp_create_nonce( 'ahd_admin_tools' ),
+			'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+			'epheUrl'    => AHD_CHARTS_URL . 'assets/ephe/',
 		);
 
 		echo '<div class="wrap">';
@@ -82,6 +84,54 @@ class AHD_Charts_Settings {
 		$settings = isset( $_POST['settings'] ) ? json_decode( stripslashes( $_POST['settings'] ), true ) : array();
 		update_option( 'ahd_chart_settings', $settings );
 		wp_send_json_success( 'Settings saved' );
+	}
+
+	public function fix_wasm_mime() {
+		check_ajax_referer( 'ahd_admin_tools', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Unauthorized' );
+		}
+
+		// Ensure helper functions are available.
+		if ( ! function_exists( 'get_home_path' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		if ( ! function_exists( 'insert_with_markers' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/misc.php';
+		}
+
+		$home_path    = function_exists( 'get_home_path' ) ? get_home_path() : ABSPATH;
+		$htaccess_file = $home_path . '.htaccess';
+
+		if ( ! file_exists( $htaccess_file ) ) {
+			// Attempt to create an empty .htaccess file if it does not exist.
+			if ( ! @touch( $htaccess_file ) ) {
+				wp_send_json_error( 'Unable to create .htaccess file. Please add the rules manually.' );
+			}
+		}
+
+		if ( ! is_writable( $htaccess_file ) ) {
+			wp_send_json_error( 'The .htaccess file is not writable. Please adjust permissions or add the rules manually.' );
+		}
+
+		$rules = array(
+			'<IfModule mod_mime.c>',
+			'	AddType application/wasm .wasm',
+			'</IfModule>',
+			'',
+			'<IfModule mod_headers.c>',
+			'	<FilesMatch "\\.wasm$">',
+			'		Header set Content-Type application/wasm',
+			'	</FilesMatch>',
+			'</IfModule>',
+		);
+
+		$written = insert_with_markers( $htaccess_file, 'AHD_CHARTS', $rules );
+		if ( ! $written ) {
+			wp_send_json_error( 'Failed to write WASM MIME rules to .htaccess. Please add them manually.' );
+		}
+
+		wp_send_json_success( 'WASM MIME rules written to .htaccess.' );
 	}
 }
 

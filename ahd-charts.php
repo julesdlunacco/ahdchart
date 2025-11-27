@@ -3,7 +3,7 @@
  * Plugin Name: AHD Charts
  * Plugin URI:  https://lunacco.design
  * Description: Astrology and Human Design charts using Swiss Ephemeris WASM and React. Credits to Swiss Ephemeris: Created by Astrodienst AG
- * Version:     1.0.5
+ * Version:     1.0.6
  * Author:      LunaCco
  * Text Domain: ahd-charts
  * Domain Path: /languages
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants
-define( 'AHD_CHARTS_VERSION', '1.0.5' );
+define( 'AHD_CHARTS_VERSION', '1.0.6' );
 define( 'AHD_CHARTS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AHD_CHARTS_URL', plugin_dir_url( __FILE__ ) );
 

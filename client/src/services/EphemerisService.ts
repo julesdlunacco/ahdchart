@@ -92,7 +92,7 @@ export class EphemerisService {
     }
 
     private calculatePlanet(jd: number, planetId: number): number | null {
-        // Use SWIEPH for high precision.
+        // Use SWIEPH for high precision (arcsecond accuracy needed for Variables).
         // SEFLG_SPEED calculates speed, which improves position accuracy for fast movers like Moon.
         const flag = this.swe.SEFLG_SWIEPH | this.swe.SEFLG_SPEED;
         try {
@@ -411,6 +411,10 @@ export class EphemerisService {
             let str = '';
             order.forEach(name => {
                 const act = activations[name];
+                if (!act) {
+                    console.warn('Missing activation for planet when printing report', name);
+                    return;
+                }
                 const sign = this.getZodiacSign(act.longitude);
                 let line = `${name}: ${act.gate}.${act.line}, ${sign} ${this.formatDegrees(act.longitude)}`;
                 

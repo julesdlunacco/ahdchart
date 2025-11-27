@@ -118,6 +118,32 @@ export const SettingsApp = () => {
         }
     };
 
+    const handleFixWasmMime = async () => {
+        if (!window.ahdAdminSettings) return;
+
+        const toolsNonce = (window.ahdAdminSettings as any).toolsNonce || window.ahdAdminSettings.nonce;
+
+        const formData = new FormData();
+        formData.append('action', 'ahd_fix_wasm_mime');
+        formData.append('nonce', toolsNonce);
+
+        try {
+            const res = await fetch(window.ahdAdminSettings.ajaxUrl, {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('WASM MIME rules were written to .htaccess. You may need to clear caching and try again.');
+            } else {
+                alert('Error updating .htaccess: ' + (data.data || 'Unknown error. Please add the rules manually.'));
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Request failed while trying to update .htaccess.');
+        }
+    };
+
     return (
         <div className="wrap" style={{ fontFamily: theme.fontFamily}}>
             <h1>AHD Charts Settings</h1>
@@ -360,6 +386,22 @@ export const SettingsApp = () => {
                         >
                             {saving ? 'Saving...' : 'Save Settings'}
                         </button>
+
+                        <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                            <h3 style={{ marginBottom: '0.5rem', fontSize: '0.95rem' }}>Server Tools</h3>
+                            <p style={{ fontSize: '0.8rem', color: '#4b5563', marginBottom: '0.5rem' }}>
+                                If Swiss Ephemeris WASM is failing to load due to an incorrect MIME type, you can
+                                try to automatically add the required <code>application/wasm</code> rules to your
+                                site&apos;s <code>.htaccess</code> file. This may not work on all hosts.
+                            </p>
+                            <button
+                                type="button"
+                                className="button"
+                                onClick={handleFixWasmMime}
+                            >
+                                Try to add WASM MIME rules to .htaccess
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div style={{ flex: 1, minWidth: '300px', border: '1px solid #ddd', padding: '1rem', background: '#fff' }}>
