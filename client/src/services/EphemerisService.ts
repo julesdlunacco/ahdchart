@@ -132,6 +132,17 @@ export class EphemerisService {
             : 'UTC';
 
         const localDateTime = DateTime.fromISO(`${birthData.date}T${birthData.time}`, { zone });
+        if (!localDateTime.isValid) {
+            console.error('Invalid local date/time in getChartData', {
+                date: birthData.date,
+                time: birthData.time,
+                timezone: zone,
+                reason: localDateTime.invalidReason,
+                explanation: localDateTime.invalidExplanation,
+            });
+            throw new Error('Invalid date, time, or timezone. Unable to calculate chart.');
+        }
+
         const utcDateTime = localDateTime.toUTC(); 
         
         // Parse coordinates for house calculation
@@ -139,6 +150,11 @@ export class EphemerisService {
         const lngStr = birthData.lng || birthData.longitude || '0';
         const lat = parseFloat(latStr);
         const lng = parseFloat(lngStr);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            console.error('Invalid latitude/longitude in getChartData', { latStr, lngStr });
+            throw new Error('Invalid latitude or longitude. Unable to calculate chart.');
+        }
         
         // 1. Birth JD
         const birthJd = this.swe.julday(utcDateTime.year, utcDateTime.month, utcDateTime.day,
@@ -239,6 +255,17 @@ export class EphemerisService {
             : 'UTC';
 
         const localDateTime = DateTime.fromISO(`${birthData.date}T${birthData.time}`, { zone });
+        if (!localDateTime.isValid) {
+            console.error('Invalid local date/time in calculateChart', {
+                date: birthData.date,
+                time: birthData.time,
+                timezone: zone,
+                reason: localDateTime.invalidReason,
+                explanation: localDateTime.invalidExplanation,
+            });
+            throw new Error('Invalid date, time, or timezone. Please check your input.');
+        }
+
         const utcDateTime = localDateTime.toUTC(); 
         
         // Parse Coordinates
@@ -248,6 +275,11 @@ export class EphemerisService {
         
         const lat = parseFloat(latStr);
         const lng = parseFloat(lngStr);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            console.error('Invalid latitude/longitude in calculateChart', { latStr, lngStr });
+            throw new Error('Invalid latitude or longitude. Please check your input.');
+        }
 
         if (lat === 0 && lng === 0 && birthData.location && birthData.location.length > 10) {
             console.warn("Warning: Latitude and Longitude are 0.0. This might indicate a parsing error if the location is not actually Null Island.");
