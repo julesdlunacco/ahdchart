@@ -91,12 +91,22 @@ export class EphemerisService {
         }
     }
 
-    private calculatePlanet(jd: number, planetId: number): number {
-        // Use SWIEPH for high precision (requires .se1 files loaded in initialize)
-        // SEFLG_SPEED calculates speed, which improves position accuracy for fast movers like Moon
+    private calculatePlanet(jd: number, planetId: number): number | null {
+        // Use SWIEPH for high precision.
+        // SEFLG_SPEED calculates speed, which improves position accuracy for fast movers like Moon.
         const flag = this.swe.SEFLG_SWIEPH | this.swe.SEFLG_SPEED;
-        const result = this.swe.calc_ut(jd, planetId, flag);
-        return result[0]; // longitude
+        try {
+            const result = this.swe.calc_ut(jd, planetId, flag);
+            const lon = result && Array.isArray(result) ? result[0] : result?.[0];
+            if (!Number.isFinite(lon)) {
+                console.error('Swiss Ephemeris returned non-finite longitude', { jd, planetId, result });
+                return null;
+            }
+            return lon;
+        } catch (error) {
+            console.error('Swiss Ephemeris calc_ut failed', { jd, planetId, error });
+            return null;
+        }
     }
 
     calculateDesignDate(birthUtc: DateTime, birthSunLongitude: number): { date: DateTime, jd: number } {
@@ -193,6 +203,10 @@ export class EphemerisService {
 
         planetIds.forEach(p => {
             const long = this.calculatePlanet(birthJd, p.id);
+            if (long === null) {
+                // Skip planets that fail to calculate instead of crashing the whole chart.
+                return;
+            }
             const activation = HumanDesignLogic.calculateActivation(long);
             activation.house = getWholeSignHouse(long, ascLong);
             birthActivations[p.name] = activation;
@@ -224,6 +238,9 @@ export class EphemerisService {
 
         planetIds.forEach(p => {
             const long = this.calculatePlanet(designJd, p.id);
+            if (long === null) {
+                return;
+            }
             const activation = HumanDesignLogic.calculateActivation(long);
             activation.house = getWholeSignHouse(long, designAscLong);
             designActivations[p.name] = activation;
@@ -313,6 +330,9 @@ export class EphemerisService {
 
         planetIds.forEach(p => {
             const long = this.calculatePlanet(birthJd, p.id);
+            if (long === null) {
+                return;
+            }
             birthActivations[p.name] = HumanDesignLogic.calculateActivation(long);
         });
 
@@ -337,6 +357,9 @@ export class EphemerisService {
 
         planetIds.forEach(p => {
             const long = this.calculatePlanet(designJd, p.id);
+            if (long === null) {
+                return;
+            }
             designActivations[p.name] = HumanDesignLogic.calculateActivation(long);
         });
 
