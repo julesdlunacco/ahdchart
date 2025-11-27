@@ -1,0 +1,24 @@
+# Node / client build artifacts
+client/node_modules/
+client/dist/
+client/.vite/
+client/.turbo/
+client/.cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# TypeScript
+client/tsconfig.tsbuildinfo
+
+# Build outputs copied into WP (handled by release zip)
+*.zip

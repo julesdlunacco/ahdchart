@@ -1,0 +1,58 @@
+name: Build & Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies & build frontend
+        working-directory: ./client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install WP-CLI
+        run: |
+          curl -sS -L -o wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          php -d detect_unicode=0 wp-cli.phar --info
+          chmod +x wp-cli.phar
+          sudo mv wp-cli.phar /usr/local/bin/wp
+
+      - name: Install dist-archive package
+        run: wp package install wp-cli/dist-archive-command
+
+      - name: Build plugin zip
+        run: wp dist-archive . ./ahd-charts-${{ github.ref_name }}.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ahd-charts-${{ github.ref_name }}-zip
+          path: ./ahd-charts-${{ github.ref_name }}.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: ./ahd-charts-${{ github.ref_name }}.zip
+          fail_on_unmatched_files: true
