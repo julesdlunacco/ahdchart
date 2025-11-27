@@ -1,9 +1,7 @@
 # Files and folders to exclude from WordPress plugin distribution
 
-# Node / build system
+# Node / build system (exclude dependencies and caches, but keep built assets)
 client/node_modules
-client/dist
-client/.vite
 client/.turbo
 client/.cache
 
