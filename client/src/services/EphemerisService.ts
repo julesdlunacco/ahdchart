@@ -121,7 +121,14 @@ export class EphemerisService {
                 designDate.hour + designDate.minute/60 + (designDate.second || 0)/3600);
 
             const currentSun = this.calculatePlanet(jd, this.swe.SE_SUN);
-            
+            if (currentSun === null) {
+                console.error('Swiss Ephemeris failed to calculate Sun position for design date', {
+                    jd,
+                    designDate: designDate.toISO(),
+                });
+                break;
+            }
+
             let diff = targetSun - currentSun;
             if (diff > 180) diff -= 360;
             if (diff < -180) diff += 360;
