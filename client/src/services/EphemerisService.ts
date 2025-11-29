@@ -92,19 +92,36 @@ export class EphemerisService {
     }
 
     private calculatePlanet(jd: number, planetId: number): number | null {
-        // Use SWIEPH for high precision (arcsecond accuracy needed for Variables).
+        // Try SWIEPH first for high precision (arcsecond accuracy needed for Variables).
         // SEFLG_SPEED calculates speed, which improves position accuracy for fast movers like Moon.
-        const flag = this.swe.SEFLG_SWIEPH | this.swe.SEFLG_SPEED;
+        const swiphFlag = this.swe.SEFLG_SWIEPH | this.swe.SEFLG_SPEED;
+        
         try {
-            const result = this.swe.calc_ut(jd, planetId, flag);
+            const result = this.swe.calc_ut(jd, planetId, swiphFlag);
+            const lon = result && Array.isArray(result) ? result[0] : result?.[0];
+            if (Number.isFinite(lon)) {
+                return lon;
+            }
+            // If SWIEPH returns non-finite, fall through to MOSEPH
+            console.warn('Swiss Ephemeris SWIEPH returned non-finite, trying MOSEPH fallback', { jd, planetId });
+        } catch (error) {
+            // SWIEPH failed, try MOSEPH as fallback
+            console.warn('Swiss Ephemeris SWIEPH failed, trying MOSEPH fallback', { jd, planetId, error });
+        }
+        
+        // Fallback to Moshier ephemeris (built-in, no external files needed)
+        // Slightly less accurate (~1 arcsecond vs 0.001 for SWIEPH) but reliable
+        const mosephFlag = this.swe.SEFLG_MOSEPH | this.swe.SEFLG_SPEED;
+        try {
+            const result = this.swe.calc_ut(jd, planetId, mosephFlag);
             const lon = result && Array.isArray(result) ? result[0] : result?.[0];
             if (!Number.isFinite(lon)) {
-                console.error('Swiss Ephemeris returned non-finite longitude', { jd, planetId, result });
+                console.error('Swiss Ephemeris MOSEPH also returned non-finite longitude', { jd, planetId, result });
                 return null;
             }
             return lon;
         } catch (error) {
-            console.error('Swiss Ephemeris calc_ut failed', { jd, planetId, error });
+            console.error('Swiss Ephemeris calc_ut failed with both SWIEPH and MOSEPH', { jd, planetId, error });
             return null;
         }
     }
