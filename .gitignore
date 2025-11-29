@@ -1,7 +1,5 @@
 # Node / client build artifacts
 client/node_modules/
-client/dist/
-client/.vite/
 client/.turbo/
 client/.cache/
 

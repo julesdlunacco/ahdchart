@@ -23,12 +23,6 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies & build frontend
-        working-directory: ./client
-        run: |
-          npm ci
-          npm run build
-
       - name: Install WP-CLI
         run: |
           curl -sS -L -o wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
@@ -48,7 +42,7 @@ jobs:
           mkdir -p build/ahd-charts
           
           # Copy all files to build directory
-          rsync -av --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='client/node_modules' --exclude='client/.turbo' --exclude='client/.cache' --exclude='.vscode' --exclude='.idea' --exclude='.DS_Store' --exclude='Thumbs.db' . build/ahd-charts/
+          rsync -av --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='client/node_modules' --exclude='client/.turbo' --exclude='client/.cache' --exclude='.vscode' --exclude='.idea' --exclude='.DS_Store' --exclude='Thumbs.db' --exclude='*.zip' --exclude='ahd-charts-*' . build/ahd-charts/
           
           # Ensure strict permissions for the zip content
           chmod -R 755 build/ahd-charts
