@@ -43,7 +43,20 @@ jobs:
         run: wp package install wp-cli/dist-archive-command
 
       - name: Build plugin zip
-        run: wp dist-archive . ./ahd-charts-${{ github.ref_name }}.zip
+        run: |
+          # Create a clean build directory
+          mkdir -p build/ahd-charts
+          
+          # Copy all files to build directory
+          rsync -av --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='client/node_modules' --exclude='client/.turbo' --exclude='client/.cache' --exclude='.vscode' --exclude='.idea' --exclude='.DS_Store' --exclude='Thumbs.db' . build/ahd-charts/
+          
+          # Ensure strict permissions for the zip content
+          chmod -R 755 build/ahd-charts
+          
+          # Create the zip from the build directory
+          cd build
+          zip -r ../ahd-charts-${{ github.ref_name }}.zip ahd-charts
+          cd ..
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

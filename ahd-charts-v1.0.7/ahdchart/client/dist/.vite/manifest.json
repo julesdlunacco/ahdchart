@@ -1,0 +1,62 @@
+{
+  "_swisseph-CHojrqzw.js": {
+    "file": "assets/swisseph-CHojrqzw.js",
+    "name": "swisseph",
+    "dynamicImports": [
+      "src/main.tsx",
+      "src/main.tsx",
+      "src/main.tsx",
+      "src/main.tsx",
+      "src/main.tsx",
+      "src/main.tsx",
+      "src/main.tsx",
+      "src/main.tsx",
+      "src/main.tsx"
+    ],
+    "assets": [
+      "assets/swisseph-qCB3Dpzs.data",
+      "assets/swisseph-BkUvWBEB.wasm"
+    ]
+  },
+  "node_modules/canvg/lib/index.es.js": {
+    "file": "assets/index.es-CC9cYZOp.js",
+    "name": "index.es",
+    "src": "node_modules/canvg/lib/index.es.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_swisseph-CHojrqzw.js"
+    ]
+  },
+  "node_modules/dompurify/dist/purify.es.js": {
+    "file": "assets/purify.es-C_uT9hQ1.js",
+    "name": "purify.es",
+    "src": "node_modules/dompurify/dist/purify.es.js",
+    "isDynamicEntry": true
+  },
+  "node_modules/swisseph-wasm/wsam/swisseph.data": {
+    "file": "assets/swisseph-qCB3Dpzs.data",
+    "src": "node_modules/swisseph-wasm/wsam/swisseph.data"
+  },
+  "node_modules/swisseph-wasm/wsam/swisseph.wasm": {
+    "file": "assets/swisseph-BkUvWBEB.wasm",
+    "src": "node_modules/swisseph-wasm/wsam/swisseph.wasm"
+  },
+  "src/main.tsx": {
+    "file": "assets/main-BphhfkQY.js",
+    "name": "main",
+    "src": "src/main.tsx",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_swisseph-CHojrqzw.js"
+    ],
+    "dynamicImports": [
+      "node_modules/dompurify/dist/purify.es.js",
+      "node_modules/canvg/lib/index.es.js"
+    ],
+    "css": [
+      "assets/main-tn0RQdqM.css"
+    ]
+  }
+}
