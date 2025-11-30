@@ -1,6 +1,6 @@
 {
-  "_swisseph-445kPFaq.js": {
-    "file": "assets/swisseph-445kPFaq.js",
+  "_swisseph-C2njMcMg.js": {
+    "file": "assets/swisseph-C2njMcMg.js",
     "name": "swisseph",
     "dynamicImports": [
       "src/main.tsx",
@@ -19,13 +19,13 @@
     ]
   },
   "node_modules/canvg/lib/index.es.js": {
-    "file": "assets/index.es-BLVsy0T9.js",
+    "file": "assets/index.es-Govzq97n.js",
     "name": "index.es",
     "src": "node_modules/canvg/lib/index.es.js",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_swisseph-445kPFaq.js"
+      "_swisseph-C2njMcMg.js"
     ]
   },
   "node_modules/dompurify/dist/purify.es.js": {
@@ -43,13 +43,13 @@
     "src": "node_modules/swisseph-wasm/wsam/swisseph.wasm"
   },
   "src/main.tsx": {
-    "file": "assets/main-BDEJhB63.js",
+    "file": "assets/main-BXtQuos6.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
-      "_swisseph-445kPFaq.js"
+      "_swisseph-C2njMcMg.js"
     ],
     "dynamicImports": [
       "node_modules/dompurify/dist/purify.es.js",

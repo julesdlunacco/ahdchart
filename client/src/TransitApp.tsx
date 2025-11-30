@@ -169,11 +169,11 @@ const buildTransitReport = (
 
 export function TransitApp() {
     const now = new Date();
-    const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
-        now.getDate()
+    const defaultDate = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(
+        now.getUTCDate()
     ).padStart(2, '0')}`;
-    const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(
-        now.getMinutes()
+    const defaultTime = `${String(now.getUTCHours()).padStart(2, '0')}:${String(
+        now.getUTCMinutes()
     ).padStart(2, '0')}`;
     const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
