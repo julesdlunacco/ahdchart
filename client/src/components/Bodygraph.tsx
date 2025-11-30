@@ -2,9 +2,12 @@ import React from 'react';
 import { ChartData } from '../services/HumanDesignLogic';
 import { Center } from '../services/HumanDesignDefinitions';
 import { GATE_POSITIONS } from './gatePositions';
+import { ConnectionAnalysis } from '../services/ConnectionLogic';
 
 interface BodygraphProps {
     data: ChartData | null;
+    connectionAnalysis?: ConnectionAnalysis | null;
+    mini?: boolean;
     theme?: {
         centerColor?: string;
         strokeColor?: string;
@@ -16,13 +19,17 @@ interface BodygraphProps {
         activeGateCircleColor?: string;
         bodygraphTextColor?: string;
         bodygraphActiveTextColor?: string;
+        connectionElectromagneticColor?: string;
+        connectionCompromiseColor?: string;
+        connectionCompanionColor?: string;
+        connectionDominanceColor?: string;
     };
 }
 
 // Planets to exclude from gate activation (they don't activate gates in HD)
 const EXCLUDED_PLANETS = ['Chiron', 'Black Moon Lilith'];
 
-export const Bodygraph: React.FC<BodygraphProps> = ({ data, theme }) => {
+export const Bodygraph: React.FC<BodygraphProps> = ({ data, connectionAnalysis, mini: _mini, theme }) => {
     const designColor = theme?.designColor || '#ff0000'; // Red
     const personalityColor = theme?.personalityColor || '#000000'; // Black
     const activeFill = theme?.centerColor || '#fbbf24'; // Active center color
@@ -33,8 +40,47 @@ export const Bodygraph: React.FC<BodygraphProps> = ({ data, theme }) => {
     const activeGateCircleColor = theme?.activeGateCircleColor || '#ffffff';
     const isTransit = (data as any)?.isTransit;
 
+    // Connection mode: use analysis results to color channels/gates
+    const getConnectionGateColor = (gateId: number): string => {
+        if (!connectionAnalysis || !data) return 'none';
+
+        // First check if this gate is active in the composite at all
+        const isActiveInComposite = data.activeGates.has(gateId);
+        if (!isActiveInComposite) return 'none';
+
+        // Check if this gate is part of a classified channel (has special color)
+        const electro = connectionAnalysis.electromagnetic.find(ch =>
+            ch.gates.gate1 === gateId || ch.gates.gate2 === gateId
+        );
+        if (electro) return theme?.connectionElectromagneticColor || '#8b5cf6';
+
+        const compromise = connectionAnalysis.compromise.find(ch =>
+            ch.gates.gate1 === gateId || ch.gates.gate2 === gateId
+        );
+        if (compromise) return theme?.connectionCompromiseColor || '#f59e0b';
+
+        const companion = connectionAnalysis.companion.find(ch =>
+            ch.gates.gate1 === gateId || ch.gates.gate2 === gateId
+        );
+        if (companion) return theme?.connectionCompanionColor || '#3b82f6';
+
+        const dominance = connectionAnalysis.dominance.find(ch =>
+            ch.gates.gate1 === gateId || ch.gates.gate2 === gateId
+        );
+        if (dominance) return theme?.connectionDominanceColor || '#10b981';
+
+        // Gate is active but not part of a complete channel (hanging gate)
+        // Use a neutral gray color to show it's present but not connected
+        return '#9ca3af'; // Gray for hanging gates
+    };
+
     const getGateColor = (gateId: number): string => {
         if (!data) return 'none';
+
+        // If in connection mode, use connection colors
+        if (connectionAnalysis) {
+            return getConnectionGateColor(gateId);
+        }
         
         // Check activations, excluding Chiron and Lilith
         const pActive = Object.entries(data.birthActivations)

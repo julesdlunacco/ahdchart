@@ -93,6 +93,105 @@ function ahd_render_transit_chart_shortcode( $atts ) {
 add_shortcode( 'ahd-transit-chart', 'ahd_render_transit_chart_shortcode' );
 
 /**
+ * Render Birth Chart Only Shortcode (no dropdown)
+ */
+function ahd_render_birth_chart_shortcode( $atts ) {
+    $manifest_path = AHD_CHARTS_PATH . 'client/dist/.vite/manifest.json';
+    $dist_url      = AHD_CHARTS_URL . 'client/dist/';
+    $js_file       = 'assets/index.js';
+
+    if ( file_exists( $manifest_path ) ) {
+        $manifest = json_decode( file_get_contents( $manifest_path ), true );
+        if ( isset( $manifest['src/main.tsx'] ) ) {
+            $entry   = $manifest['src/main.tsx'];
+            $js_file = $entry['file'];
+        }
+    }
+
+    $db_settings = get_option( 'ahd_chart_settings', array() );
+    $settings = array(
+        'pluginUrl' => AHD_CHARTS_URL,
+        'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+        'epheUrl'   => AHD_CHARTS_URL . 'assets/ephe/',
+        'theme'     => $db_settings,
+    );
+
+    $root   = '<div id="ahd-birth-root"></div>';
+    $inline = '<script type="text/javascript">window.ahdSettings = ' . wp_json_encode( $settings ) . ';</script>';
+    $script = '<script type="module" src="' . esc_url( $dist_url . $js_file ) . '"></script>';
+    $style  = '<style>.entry-title, .entry-header, .page-title, h1.wp-block-post-title, .post-title { display: none !important; }</style>';
+
+    return $style . "\n" . $root . "\n" . $inline . "\n" . $script;
+}
+add_shortcode( 'ahd-birth', 'ahd_render_birth_chart_shortcode' );
+
+/**
+ * Render Connection Chart Shortcode
+ */
+function ahd_render_connection_chart_shortcode( $atts ) {
+    $manifest_path = AHD_CHARTS_PATH . 'client/dist/.vite/manifest.json';
+    $dist_url      = AHD_CHARTS_URL . 'client/dist/';
+    $js_file       = 'assets/index.js';
+
+    if ( file_exists( $manifest_path ) ) {
+        $manifest = json_decode( file_get_contents( $manifest_path ), true );
+        if ( isset( $manifest['src/main.tsx'] ) ) {
+            $entry   = $manifest['src/main.tsx'];
+            $js_file = $entry['file'];
+        }
+    }
+
+    $db_settings = get_option( 'ahd_chart_settings', array() );
+    $settings = array(
+        'pluginUrl' => AHD_CHARTS_URL,
+        'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+        'epheUrl'   => AHD_CHARTS_URL . 'assets/ephe/',
+        'theme'     => $db_settings,
+    );
+
+    $root   = '<div id="ahd-connection-root"></div>';
+    $inline = '<script type="text/javascript">window.ahdSettings = ' . wp_json_encode( $settings ) . ';</script>';
+    $script = '<script type="module" src="' . esc_url( $dist_url . $js_file ) . '"></script>';
+    $style  = '<style>.entry-title, .entry-header, .page-title, h1.wp-block-post-title, .post-title { display: none !important; }</style>';
+
+    return $style . "\n" . $root . "\n" . $inline . "\n" . $script;
+}
+add_shortcode( 'ahd-connection-chart', 'ahd_render_connection_chart_shortcode' );
+
+/**
+ * Render Transit + Birth Composite Shortcode
+ */
+function ahd_render_transit_birth_chart_shortcode( $atts ) {
+    $manifest_path = AHD_CHARTS_PATH . 'client/dist/.vite/manifest.json';
+    $dist_url      = AHD_CHARTS_URL . 'client/dist/';
+    $js_file       = 'assets/index.js';
+
+    if ( file_exists( $manifest_path ) ) {
+        $manifest = json_decode( file_get_contents( $manifest_path ), true );
+        if ( isset( $manifest['src/main.tsx'] ) ) {
+            $entry   = $manifest['src/main.tsx'];
+            $js_file = $entry['file'];
+        }
+    }
+
+    $db_settings = get_option( 'ahd_chart_settings', array() );
+    $settings = array(
+        'pluginUrl' => AHD_CHARTS_URL,
+        'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+        'epheUrl'   => AHD_CHARTS_URL . 'assets/ephe/',
+        'theme'     => $db_settings,
+    );
+
+    $root   = '<div id="ahd-transit-birth-root"></div>';
+    $inline = '<script type="text/javascript">window.ahdSettings = ' . wp_json_encode( $settings ) . ';</script>';
+    $script = '<script type="module" src="' . esc_url( $dist_url . $js_file ) . '"></script>';
+    $style  = '<style>.entry-title, .entry-header, .page-title, h1.wp-block-post-title, .post-title { display: none !important; }</style>';
+
+    return $style . "\n" . $root . "\n" . $inline . "\n" . $script;
+}
+add_shortcode( 'ahd-transit-birth-chart', 'ahd_render_transit_birth_chart_shortcode' );
+
+/**
  * Enqueue Scripts and Styles
  */
 function ahd_charts_enqueue_scripts() {

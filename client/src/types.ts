@@ -47,6 +47,11 @@ export interface AppTheme {
     buttonTextColor?: string;
     inputBgColor?: string;
     inputBorderColor?: string;
+    // Connection / composite chart colors
+    connectionElectromagneticColor?: string;
+    connectionCompromiseColor?: string;
+    connectionCompanionColor?: string;
+    connectionDominanceColor?: string;
 }
 
 // Zodiac symbols for display
