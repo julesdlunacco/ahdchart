@@ -51,10 +51,46 @@ function ahd_render_chart_shortcode( $atts ) {
 	$root   = '<div id="ahd-root"></div>';
 	$inline = '<script type="text/javascript">window.ahdSettings = ' . wp_json_encode( $settings ) . ';</script>';
 	$script = '<script type="module" src="' . esc_url( $dist_url . $js_file ) . '"></script>';
+	$style  = '<style>.entry-title, .entry-header, .page-title, h1.wp-block-post-title, .post-title { display: none !important; }</style>';
 
-	return $root . "\n" . $inline . "\n" . $script;
+	return $style . "\n" . $root . "\n" . $inline . "\n" . $script;
 }
 add_shortcode( 'ahd-chart', 'ahd_render_chart_shortcode' );
+
+/**
+ * Render Transit Chart Shortcode
+ */
+function ahd_render_transit_chart_shortcode( $atts ) {
+	// Reuse the same built asset and settings as the main chart shortcode.
+	$manifest_path = AHD_CHARTS_PATH . 'client/dist/.vite/manifest.json';
+	$dist_url      = AHD_CHARTS_URL . 'client/dist/';
+	$js_file       = 'assets/index.js';
+
+	if ( file_exists( $manifest_path ) ) {
+		$manifest = json_decode( file_get_contents( $manifest_path ), true );
+		if ( isset( $manifest['src/main.tsx'] ) ) {
+			$entry   = $manifest['src/main.tsx'];
+			$js_file = $entry['file'];
+		}
+	}
+
+	// Settings object for the frontend (same as main chart)
+	$db_settings = get_option( 'ahd_chart_settings', array() );
+	$settings = array(
+		'pluginUrl' => AHD_CHARTS_URL,
+		'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+		'epheUrl'   => AHD_CHARTS_URL . 'assets/ephe/',
+		'theme'     => $db_settings,
+	);
+
+	$root   = '<div id="ahd-transit-root"></div>';
+	$inline = '<script type="text/javascript">window.ahdSettings = ' . wp_json_encode( $settings ) . ';</script>';
+	$script = '<script type="module" src="' . esc_url( $dist_url . $js_file ) . '"></script>';
+	$style  = '<style>.entry-title, .entry-header, .page-title, h1.wp-block-post-title, .post-title { display: none !important; }</style>';
+
+	return $style . "\n" . $root . "\n" . $inline . "\n" . $script;
+}
+add_shortcode( 'ahd-transit-chart', 'ahd_render_transit_chart_shortcode' );
 
 /**
  * Enqueue Scripts and Styles

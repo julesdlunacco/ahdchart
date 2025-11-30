@@ -15,6 +15,7 @@ export const SettingsApp = () => {
         textColor: '#000000',
         arrowColor: '#000000',
         fontFamily: 'sans-serif',
+        fontSizeScale: 1.0,
         activeGateCircleColor: '#ffffff',
         bodygraphTextColor: '#000000',
         bodygraphActiveTextColor: '#000000',
@@ -310,6 +311,22 @@ export const SettingsApp = () => {
                             </select>
                         </div>
 
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Font Size Multiplier (Default: 1.0)</label>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <input 
+                                    type="number" 
+                                    step="0.1" 
+                                    min="0.5" 
+                                    max="3.0" 
+                                    value={theme.fontSizeScale || 1.0} 
+                                    onChange={e => handleChange('fontSizeScale', parseFloat(e.target.value).toString())} 
+                                    style={{ width: '80px' }}
+                                />
+                                <span style={{ fontSize: '0.85rem', color: '#666' }}>Adjust if text appears too small (e.g. 1.6 for Bricks)</span>
+                            </div>
+                        </div>
+
                         <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem', borderTop: '1px solid #ddd', paddingTop: '1rem' }}>Form Styling</h3>
                         
                         <div>
@@ -424,7 +441,8 @@ export const SettingsApp = () => {
                                     border: '1px solid #e5e7eb',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '0.5rem'
+                                    gap: '0.5rem',
+                                    fontSize: `calc(16px * ${theme.fontSizeScale || 1})`
                                 }}
                             >
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>

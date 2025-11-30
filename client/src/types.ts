@@ -37,6 +37,7 @@ export interface AppTheme {
     textColor?: string;
     arrowColor?: string;
     fontFamily?: string;
+    fontSizeScale?: number;
     activeGateCircleColor?: string;
     bodygraphTextColor?: string;
     bodygraphActiveTextColor?: string;

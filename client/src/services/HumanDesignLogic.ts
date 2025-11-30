@@ -36,6 +36,7 @@ export interface ChartData {
     };
     definition: string;
     incarnationCross: string;
+    modality: string;
 }
 
 interface VariableInfo {
@@ -80,6 +81,13 @@ export class HumanDesignLogic {
         const base = Math.floor(remainderForBase / DEGREE_PER_BASE) + 1;
 
         return { gate, line, color, tone, base, longitude };
+    }
+
+    private static getModality(longitude: number): string {
+        const index = Math.floor(longitude / 30);
+        const modalities = ['Cardinal', 'Fixed', 'Mutable'];
+        // Aries (0) -> Cardinal, Taurus (1) -> Fixed, Gemini (2) -> Mutable, etc.
+        return modalities[index % 3];
     }
 
     static determineChartProperties(personalityActivations: Record<string, Activation>, designActivations: Record<string, Activation>): ChartData {
@@ -202,6 +210,14 @@ export class HumanDesignLogic {
         const angle = this.getAngleFromProfile(profile);
         const incarnationCross = this.getIncarnationCrossName(pSun.gate, angle);
 
+        // Determine Modality
+        const personalityModality = this.getModality(pSun.longitude);
+        const designModality = this.getModality(dSun.longitude);
+        let modality = personalityModality;
+        if (personalityModality !== designModality) {
+            modality = `${personalityModality}/${designModality}`;
+        }
+
          return {
              birthActivations: personalityActivations,
              designActivations: designActivations,
@@ -213,7 +229,8 @@ export class HumanDesignLogic {
              profile,
              variables,
              definition,
-             incarnationCross
+             incarnationCross,
+             modality
          };
     }
 

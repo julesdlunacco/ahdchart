@@ -31,6 +31,7 @@ export const Bodygraph: React.FC<BodygraphProps> = ({ data, theme }) => {
     const arrowColor = theme?.arrowColor || '#000000';
     const fontFamily = theme?.fontFamily || 'sans-serif';
     const activeGateCircleColor = theme?.activeGateCircleColor || '#ffffff';
+    const isTransit = (data as any)?.isTransit;
 
     const getGateColor = (gateId: number): string => {
         if (!data) return 'none';
@@ -39,13 +40,15 @@ export const Bodygraph: React.FC<BodygraphProps> = ({ data, theme }) => {
         const pActive = Object.entries(data.birthActivations)
             .filter(([name]) => !EXCLUDED_PLANETS.includes(name))
             .some(([, a]) => a.gate === gateId);
-        const dActive = Object.entries(data.designActivations)
-            .filter(([name]) => !EXCLUDED_PLANETS.includes(name))
-            .some(([, a]) => a.gate === gateId);
+        const dActive = isTransit
+            ? false
+            : Object.entries(data.designActivations)
+                .filter(([name]) => !EXCLUDED_PLANETS.includes(name))
+                .some(([, a]) => a.gate === gateId);
 
-        if (pActive && dActive) return 'url(#split-fill)';
+        if (!isTransit && pActive && dActive) return 'url(#split-fill)';
         if (pActive) return personalityColor;
-        if (dActive) return designColor;
+        if (!isTransit && dActive) return designColor;
         return 'none';
     };
 

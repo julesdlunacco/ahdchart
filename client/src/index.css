@@ -1,4 +1,92 @@
-/* Intentionally left mostly empty.
-   We avoid global body/button styles here so we don't break
-   the WordPress admin layout. All chart styling is done
-   via component-level inline styles and classes. */
+/* Scoped CSS Reset for AHD Charts Plugin */
+/* This ensures the plugin looks consistent regardless of the active WordPress theme */
+
+#ahd-root {
+  /* Create a new stacking context and isolate styles */
+  isolation: isolate;
+  width: 100%;
+  line-height: 1.5;
+  /* Ensure local font sizing doesn't get too crazy if theme sets root size weirdly */
+  font-size: 16px; 
+  color: #1f2937; /* Default text color to prevent invisible text on dark themes */
+}
+
+/* CRITICAL: Force border-box sizing for everything inside the plugin.
+   This fixes the issue where padding makes inputs wider than their container. */
+#ahd-root *,
+#ahd-root *::before,
+#ahd-root *::after {
+  box-sizing: border-box !important;
+}
+
+/* Form Field Resets */
+#ahd-root input[type="text"],
+#ahd-root input[type="date"],
+#ahd-root input[type="time"],
+#ahd-root input[type="email"],
+#ahd-root input[type="number"],
+#ahd-root select,
+#ahd-root textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0; /* We handle spacing via flex/grid gap */
+  outline: none;
+  box-shadow: none; /* Reset theme shadows if any, unless we want them */
+  appearance: none; /* Remove native styling for consistency */
+  -webkit-appearance: none;
+  
+  /* Ensure adequate height/padding if theme strips it */
+  min-height: 42px; 
+}
+
+/* Fix specific input types that might be targeted by theme CSS */
+#ahd-root input:focus,
+#ahd-root select:focus,
+#ahd-root textarea:focus {
+  outline: 2px solid transparent;
+}
+
+/* Label Resets */
+#ahd-root label {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: inherit;
+}
+
+/* Button Resets */
+#ahd-root button {
+  appearance: none;
+  -webkit-appearance: none;
+  text-transform: none; /* Prevent themes from forcing uppercase */
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* List Resets (Themes often add bullets or margins to all UL/LI) */
+#ahd-root ul,
+#ahd-root li {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-indent: 0 !important;
+  background: none !important; /* Some themes add background icons to LI */
+}
+
+/* Image/SVG Resets */
+#ahd-root img,
+#ahd-root svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  vertical-align: middle;
+}
+
+/* Container spacing protection */
+.ahd-container {
+    /* Ensure the container has breathing room even if theme removes it */
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+}

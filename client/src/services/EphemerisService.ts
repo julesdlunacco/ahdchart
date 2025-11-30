@@ -288,6 +288,13 @@ export class EphemerisService {
         return HumanDesignLogic.determineChartProperties(birthActivations, designActivations);
     }
 
+    private getModality(longitude: number): string {
+        const index = Math.floor(longitude / 30);
+        const modalities = ['Cardinal', 'Fixed', 'Mutable'];
+        // Aries (0) -> Cardinal, Taurus (1) -> Fixed, Gemini (2) -> Mutable, etc.
+        return modalities[index % 3];
+    }
+
     async calculateChart(birthData: any): Promise<string> {
         await this.initialize();
         
@@ -444,9 +451,50 @@ export class EphemerisService {
             return str;
         };
 
+        // Helper: Stellium Calculation
+        const getStelliums = (activations: Record<string, Activation>, ascLong: number | null) => {
+            const includedPlanets = [
+                'Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 
+                'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'
+            ];
+            
+            const signCounts: Record<string, number> = {};
+            
+            includedPlanets.forEach(p => {
+                if (!activations[p]) return;
+                const sign = this.getZodiacSign(activations[p].longitude);
+                signCounts[sign] = (signCounts[sign] || 0) + 1;
+            });
+
+            let str = '';
+            Object.entries(signCounts).forEach(([sign, count]) => {
+                if (count >= 3) {
+                    let line = `Stellium in ${sign}`;
+                    // Calculate house for the stellium (using the first planet found in that sign as reference, 
+                    // since Whole Sign puts them all in the same house)
+                    if (ascLong !== null) {
+                        // Find any planet in this sign to get the house
+                        const samplePlanet = includedPlanets.find(p => 
+                            activations[p] && this.getZodiacSign(activations[p].longitude) === sign
+                        );
+                        if (samplePlanet) {
+                            const house = getWholeSignHouse(activations[samplePlanet].longitude, ascLong);
+                            line += ` (House ${house})`;
+                        }
+                    }
+                    str += line + '\n';
+                }
+            });
+            return str;
+        };
+
         output += `Birth Chart Planetary Positions:\n\n`;
         // Use Birth Ascendant for Birth Planets
         output += printPlanets(birthActivations, birthAsmc ? birthAsmc[0] : null);
+        const birthStelliums = getStelliums(birthActivations, birthAsmc ? birthAsmc[0] : null);
+        if (birthStelliums) {
+            output += birthStelliums;
+        }
 
         const printCrossPoints = (asmc: number[] | null) => {
             if (!asmc || asmc.length < 4) {
@@ -488,15 +536,27 @@ export class EphemerisService {
         output += `\nDesign Chart Planetary Positions:\n\n`;
         // Use Design Ascendant for Design Planets (Standalone Design Chart logic)
         output += printPlanets(designActivations, designAsmc ? designAsmc[0] : null);
+        const designStelliums = getStelliums(designActivations, designAsmc ? designAsmc[0] : null);
+        if (designStelliums) {
+            output += designStelliums;
+        }
 
         output += `\nDesign Chart Cross Points:\n`;
         output += printCrossPoints(designAsmc);
+
+        // Determine Profile Modality
+        const personalityModality = this.getModality(birthActivations['Sun'].longitude);
+        const designModality = this.getModality(designActivations['Sun'].longitude);
+        let modalityString = personalityModality;
+        if (personalityModality !== designModality) {
+            modalityString = `${personalityModality}/${designModality}`;
+        }
 
         output += `\nHuman Design Core Information:\n`;
         output += `Type: ${chartData.type}\n`;
         output += `Strategy: ${chartData.authority}\n`; 
         output += `Definition: ${chartData.definition}\n`; 
-        output += `Profile: ${chartData.profile}\n`;
+        output += `Profile: ${chartData.profile} ${modalityString}\n`;
         output += `Incarnation Cross: ${chartData.incarnationCross}\n`;
 
         output += `\nDefined/Undefined Centers:\n`;
