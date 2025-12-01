@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bodygraph } from './components/Bodygraph';
-import { PlanetPanel } from './components/PlanetPanel';
+import { ConnectionPlanetPanel } from './components/ConnectionPlanetPanel';
 import { ChartData, Activation } from './services/HumanDesignLogic';
 import { EphemerisService } from './services/EphemerisService';
 import { ConnectionLogic, ConnectionAnalysis } from './services/ConnectionLogic';
 import { AppTheme } from './types';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const ephemerisService = new EphemerisService('assets/ephe');
 
@@ -52,6 +54,7 @@ export function ConnectionApp() {
     const [connectionAnalysis, setConnectionAnalysis] = useState<ConnectionAnalysis | null>(null);
     const [theme, setTheme] = useState<AppTheme | undefined>(undefined);
     const [showResults, setShowResults] = useState(false);
+    const exportRef = useRef<HTMLDivElement>(null);
 
     // Load saved charts and theme on mount
     useEffect(() => {
@@ -193,6 +196,51 @@ export function ConnectionApp() {
         setConnectionAnalysis(null);
     };
 
+    const handleExportPng = async () => {
+        if (!exportRef.current) return;
+        try {
+            const canvas = await html2canvas(exportRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff'
+            });
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `connection-${getChartName(selectedA)}-${getChartName(selectedB)}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) {
+            console.error('Error exporting PNG', e);
+        }
+    };
+
+    const handleExportPdf = async () => {
+        if (!exportRef.current) return;
+        try {
+            const canvas = await html2canvas(exportRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff'
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'landscape' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 30;
+            const imgWidth = pageWidth - margin * 2;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            // If image is taller than page, scale down
+            const finalHeight = Math.min(imgHeight, pageHeight - margin * 2);
+            const finalWidth = (finalHeight / imgHeight) * imgWidth;
+
+            pdf.addImage(imgData, 'PNG', margin, margin, finalWidth, finalHeight);
+            pdf.save(`connection-${getChartName(selectedA)}-${getChartName(selectedB)}.pdf`);
+        } catch (e) {
+            console.error('Error exporting PDF', e);
+        }
+    };
+
     const getChartName = (id: number | null) => {
         if (id === null) return 'Not selected';
         const chart = savedCharts.find(c => c.id === id);
@@ -322,22 +370,18 @@ export function ConnectionApp() {
         );
     }
 
-    // Render results: 3-bodygraph layout
+    // Render results
     const themeCode = connectionAnalysis?.compositeCenters.code || '';
     const themeDescription = CONNECTION_THEME_DESCRIPTIONS[themeCode] || '';
 
+    // Get chart info for display
+    const chartAInfo = savedCharts.find(c => c.id === selectedA);
+    const chartBInfo = savedCharts.find(c => c.id === selectedB);
+
     return (
         <div className="ahd-connection-results" style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px', fontFamily: theme?.fontFamily }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5em' }}>
-                <div>
-                    <h2 style={{ margin: 0, color: theme?.textColor || '#1f2937' }}>
-                        Connection: {getChartName(selectedA)} + {getChartName(selectedB)}
-                    </h2>
-                    <p style={{ margin: '0.25em 0 0', color: '#6b7280', fontSize: '0.9em' }}>
-                        Theme: <strong>{themeCode}</strong> – {themeDescription}
-                    </p>
-                </div>
+            {/* Action buttons - hidden in export */}
+            <div className="no-export" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75em', marginBottom: '1em' }}>
                 <button
                     onClick={handleReset}
                     style={{
@@ -351,124 +395,223 @@ export function ConnectionApp() {
                 >
                     New Connection
                 </button>
+                <button
+                    onClick={handleExportPng}
+                    style={{
+                        padding: '0.5em 1em',
+                        backgroundColor: '#1f2937',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Export PNG
+                </button>
+                <button
+                    onClick={handleExportPdf}
+                    style={{
+                        padding: '0.5em 1em',
+                        backgroundColor: '#1f2937',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Export PDF
+                </button>
             </div>
 
-            {/* 3-column layout: Person A | Composite | Person B */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: '1.5em', alignItems: 'flex-start' }}>
-                {/* Person A */}
-                <div style={{ backgroundColor: '#fff', padding: '1em', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ margin: '0 0 0.75em', fontSize: '1em', color: theme?.textColor || '#1f2937' }}>
-                        {getChartName(selectedA)}
-                    </h3>
-                    {chartA && (
-                        <>
-                            <Bodygraph data={chartA} theme={theme} mini />
-                            <div style={{ marginTop: '1em' }}>
-                                <PlanetPanel
-                                    activations={chartA.birthActivations}
-                                    side="personality"
-                                    color={theme?.personalityColor || '#000'}
-                                    textColor={theme?.textColor || '#111827'}
-                                    fontFamily={theme?.fontFamily}
-                                />
-                                <PlanetPanel
-                                    activations={chartA.designActivations}
-                                    side="design"
-                                    color={theme?.designColor || '#ff0000'}
-                                    textColor={theme?.textColor || '#111827'}
-                                    fontFamily={theme?.fontFamily}
-                                />
-                            </div>
-                        </>
-                    )}
+            {/* Exportable content - landscape layout, width driven by content so nothing is clipped */}
+            <div 
+                ref={exportRef} 
+                style={{ 
+                    backgroundColor: '#fff', 
+                    padding: '12px 16px', 
+                    borderRadius: '8px',
+                    minHeight: '750px',
+                    boxSizing: 'border-box',
+                    margin: '0 auto',
+                    overflow: 'hidden'
+                }}
+            >
+                {/* Header */}
+                <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                    <h2 style={{ margin: 0, color: '#c026d3', fontSize: '18px', fontWeight: 600 }}>
+                        Connection Chart
+                    </h2>
+                    <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '12px' }}>
+                        Theme: <strong>{themeCode}</strong> – {themeDescription}
+                    </p>
                 </div>
 
-                {/* Composite Center */}
-                <div style={{ backgroundColor: '#fff', padding: '1em', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ margin: '0 0 0.75em', fontSize: '1em', color: theme?.textColor || '#1f2937', textAlign: 'center' }}>
-                        Composite Chart
-                    </h3>
-                    {compositeData && connectionAnalysis && (
-                        <>
-                            <Bodygraph data={compositeData} connectionAnalysis={connectionAnalysis} theme={theme} />
+                {/* Main layout: Person A info | Design Panel | Composite | Personality Panel | Person B info */}
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 160px 1fr 160px 1fr', 
+                    gap: '8px', 
+                    alignItems: 'flex-start'
+                }}>
+                    
+                    {/* Person A Info (left) */}
+                    <div style={{ fontSize: '9px', color: 'theme?.textColor' }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '11px', color: 'theme?.textColor' }}>
+                            {getChartName(selectedA)}
+                        </h3>
+                        {chartAInfo && (
+                            <div style={{ lineHeight: 1.3 }}>
+                                <div>Birth: {chartAInfo.input.date}</div>
+                                <div>Time: {chartAInfo.input.time}</div>
+                                <div style={{ wordBreak: 'break-word' }}>{chartAInfo.input.location}</div>
+                                {chartA && (
+                                    <>
+                                        <div style={{ marginTop: '3px' }}>Type: {chartA.type}</div>
+                                        <div>Profile: {chartA.profile}</div>
+                                        <div>Authority: {chartA.authority}</div>
+                                        <div>Definition: {chartA.definition}</div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        {chartA && (
+                            <div style={{ marginTop: '6px', maxWidth: '80px', transform: 'scale(0.7)', transformOrigin: 'top left' }}>
+                                <Bodygraph data={chartA} theme={theme} mini />
+                            </div>
+                        )}
+                    </div>
 
-                            {/* Connection Legend */}
-                            <div style={{ marginTop: '1em', padding: '0.75em', backgroundColor: '#f9fafb', borderRadius: '8px', fontSize: '0.85em' }}>
-                                <div style={{ fontWeight: 600, marginBottom: '0.5em' }}>
-                                    Composite: {connectionAnalysis.compositeChannels.length} channels, {connectionAnalysis.compositeCenters.definedCenters.size} defined centers
+                    {/* Design Panel - Both people's design activations */}
+                    {chartA && chartB && (
+                        <ConnectionPlanetPanel
+                            activationsA={chartA.designActivations}
+                            activationsB={chartB.designActivations}
+                            side="design"
+                            colorA={theme?.designColor || '#ff0000'}
+                            colorB={theme?.designColor || '#ff0000'}
+                            fontFamily={theme?.fontFamily}
+                        />
+                    )}
+
+                    {/* Composite Bodygraph (center) */}
+                    <div style={{ textAlign: 'center' }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '11px', color: theme?.textColor || '#1f2937' }}>
+                            Composite
+                        </h3>
+                        {compositeData && connectionAnalysis && (
+                            <div style={{ maxWidth: '320px', margin: '0 auto' }}>
+                                <Bodygraph data={compositeData} connectionAnalysis={connectionAnalysis} theme={theme} />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Personality Panel - Both people's personality activations */}
+                    {chartA && chartB && (
+                        <ConnectionPlanetPanel
+                            activationsA={chartA.birthActivations}
+                            activationsB={chartB.birthActivations}
+                            side="personality"
+                            colorA={theme?.personalityColor || '#000'}
+                            colorB={theme?.personalityColor || '#000'}
+                            fontFamily={theme?.fontFamily}
+                        />
+                    )}
+
+                    {/* Person B Info (right) */}
+                    <div style={{ fontSize: '9px', textAlign: 'right', color: 'theme?.textColor' }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '11px', color: 'theme?.textColor' }}>
+                            {getChartName(selectedB)}
+                        </h3>
+                        {chartBInfo && (
+                            <div style={{ lineHeight: 1.3 }}>
+                                <div>Birth: {chartBInfo.input.date}</div>
+                                <div>Time: {chartBInfo.input.time}</div>
+                                <div style={{ wordBreak: 'break-word' }}>{chartBInfo.input.location}</div>
+                                {chartB && (
+                                    <>
+                                        <div style={{ marginTop: '3px' }}>Type: {chartB.type}</div>
+                                        <div>Profile: {chartB.profile}</div>
+                                        <div>Authority: {chartB.authority}</div>
+                                        <div>Definition: {chartB.definition}</div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        {chartB && (
+                            <div style={{ marginTop: '6px', maxWidth: '80px', transform: 'scale(0.7)', transformOrigin: 'top right' }}>
+                                <Bodygraph data={chartB} theme={theme} mini />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Connection Channels Section - Compact */}
+                {connectionAnalysis && (
+                    <div style={{ marginTop: '10px', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+                        <h3 style={{ margin: '0 0 6px', textAlign: 'center' }}>Connection Channels</h3>
+                        
+                        {/* Theme info */}
+                        <div style={{ textAlign: 'center', marginBottom: '6px' }}>
+                            <strong>Theme: {themeCode}</strong>
+                            <span style={{ marginLeft: '6px', color: '#6b7280' }}>
+                                ({connectionAnalysis.compositeCenters.definedCenters.size} defined, {connectionAnalysis.compositeCenters.openCenters.size} open)
+                            </span>
+                        </div>
+
+                        {/* Channel type columns */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                            {/* Electromagnetic */}
+                            <div>
+                                <div style={{ fontWeight: 600, color: theme?.connectionElectromagneticColor || '#8b5cf6', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: theme?.connectionElectromagneticColor || '#8b5cf6', borderRadius: 1 }}></span>
+                                    Electromagnetic ({connectionAnalysis.electromagnetic.length})
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75em', marginBottom: '0.5em' }}>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: theme?.connectionElectromagneticColor || '#8b5cf6', borderRadius: 2, marginRight: 4 }}></span> Electromagnetic ({connectionAnalysis.electromagnetic.length})</span>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: theme?.connectionCompromiseColor || '#f59e0b', borderRadius: 2, marginRight: 4 }}></span> Compromise ({connectionAnalysis.compromise.length})</span>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: theme?.connectionCompanionColor || '#3b82f6', borderRadius: 2, marginRight: 4 }}></span> Companion ({connectionAnalysis.companion.length})</span>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: theme?.connectionDominanceColor || '#10b981', borderRadius: 2, marginRight: 4 }}></span> Dominance ({connectionAnalysis.dominance.length})</span>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: '#9ca3af', borderRadius: 2, marginRight: 4 }}></span> Hanging Gate</span>
+                                {connectionAnalysis.electromagnetic.map(ch => (
+                                    <div key={ch.id} style={{ marginLeft: '12px' }}>{ch.id}</div>
+                                ))}
+                            </div>
+
+                            {/* Compromise */}
+                            <div>
+                                <div style={{ fontWeight: 600, color: theme?.connectionCompromiseColor || '#f59e0b', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: theme?.connectionCompromiseColor || '#f59e0b', borderRadius: 1 }}></span>
+                                    Compromise ({connectionAnalysis.compromise.length})
                                 </div>
-                                {connectionAnalysis.compositeCenters.definedByComposite.size > 0 && (
-                                    <div style={{ color: '#059669', fontSize: '0.9em' }}>
-                                        ✨ New centers defined together: {[...connectionAnalysis.compositeCenters.definedByComposite].join(', ')}
-                                    </div>
-                                )}
+                                {connectionAnalysis.compromise.map(ch => (
+                                    <div key={ch.id} style={{ marginLeft: '12px' }}>{ch.id} ({ch.fromPerson})</div>
+                                ))}
                             </div>
 
-                            {/* Channel Lists */}
-                            <div style={{ marginTop: '1em', fontSize: '0.85em' }}>
-                                {connectionAnalysis.electromagnetic.length > 0 && (
-                                    <div style={{ marginBottom: '0.75em' }}>
-                                        <strong style={{ color: theme?.connectionElectromagneticColor || '#8b5cf6' }}>Electromagnetic:</strong>
-                                        <span style={{ marginLeft: '0.5em' }}>{connectionAnalysis.electromagnetic.map(c => c.id).join(', ')}</span>
-                                    </div>
-                                )}
-                                {connectionAnalysis.compromise.length > 0 && (
-                                    <div style={{ marginBottom: '0.75em' }}>
-                                        <strong style={{ color: theme?.connectionCompromiseColor || '#f59e0b' }}>Compromise:</strong>
-                                        <span style={{ marginLeft: '0.5em' }}>{connectionAnalysis.compromise.map(c => `${c.id} (${c.fromPerson} dominates)`).join(', ')}</span>
-                                    </div>
-                                )}
-                                {connectionAnalysis.companion.length > 0 && (
-                                    <div style={{ marginBottom: '0.75em' }}>
-                                        <strong style={{ color: theme?.connectionCompanionColor || '#3b82f6' }}>Companion:</strong>
-                                        <span style={{ marginLeft: '0.5em' }}>{connectionAnalysis.companion.map(c => c.id).join(', ')}</span>
-                                    </div>
-                                )}
-                                {connectionAnalysis.dominance.length > 0 && (
-                                    <div style={{ marginBottom: '0.75em' }}>
-                                        <strong style={{ color: theme?.connectionDominanceColor || '#10b981' }}>Dominance:</strong>
-                                        <span style={{ marginLeft: '0.5em' }}>{connectionAnalysis.dominance.map(c => `${c.id} (${c.fromPerson})`).join(', ')}</span>
-                                    </div>
-                                )}
+                            {/* Companion */}
+                            <div>
+                                <div style={{ fontWeight: 600, color: theme?.connectionCompanionColor || '#3b82f6', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: theme?.connectionCompanionColor || '#3b82f6', borderRadius: 1 }}></span>
+                                    Companion ({connectionAnalysis.companion.length})
+                                </div>
+                                {connectionAnalysis.companion.map(ch => (
+                                    <div key={ch.id} style={{ marginLeft: '12px' }}>{ch.id}</div>
+                                ))}
                             </div>
-                        </>
-                    )}
-                </div>
 
-                {/* Person B */}
-                <div style={{ backgroundColor: '#fff', padding: '1em', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ margin: '0 0 0.75em', fontSize: '1em', color: theme?.textColor || '#1f2937' }}>
-                        {getChartName(selectedB)}
-                    </h3>
-                    {chartB && (
-                        <>
-                            <Bodygraph data={chartB} theme={theme} mini />
-                            <div style={{ marginTop: '1em' }}>
-                                <PlanetPanel
-                                    activations={chartB.birthActivations}
-                                    side="personality"
-                                    color={theme?.personalityColor || '#000'}
-                                    textColor={theme?.textColor || '#111827'}
-                                    fontFamily={theme?.fontFamily}
-                                />
-                                <PlanetPanel
-                                    activations={chartB.designActivations}
-                                    side="design"
-                                    color={theme?.designColor || '#ff0000'}
-                                    textColor={theme?.textColor || '#111827'}
-                                    fontFamily={theme?.fontFamily}
-                                />
+                            {/* Dominance */}
+                            <div>
+                                <div style={{ fontWeight: 600, color: theme?.connectionDominanceColor || '#10b981', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: theme?.connectionDominanceColor || '#10b981', borderRadius: 1 }}></span>
+                                    Dominance ({connectionAnalysis.dominance.length})
+                                </div>
+                                {connectionAnalysis.dominance.map(ch => (
+                                    <div key={ch.id} style={{ marginLeft: '12px' }}>{ch.id} ({ch.fromPerson})</div>
+                                ))}
                             </div>
-                        </>
-                    )}
-                </div>
+                        </div>
+
+                        {connectionAnalysis.compositeCenters.definedByComposite.size > 0 && (
+                            <div style={{ marginTop: '6px', textAlign: 'center', color: '#059669' }}>
+                                New centers defined together: {[...connectionAnalysis.compositeCenters.definedByComposite].join(', ')}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

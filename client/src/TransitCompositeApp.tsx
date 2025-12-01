@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bodygraph } from './components/Bodygraph';
-import { PlanetPanel } from './components/PlanetPanel';
+import { ConnectionPlanetPanel } from './components/ConnectionPlanetPanel';
 import { ChartData, Activation, HumanDesignLogic } from './services/HumanDesignLogic';
 import { EphemerisService } from './services/EphemerisService';
 import { ConnectionLogic, ConnectionAnalysis } from './services/ConnectionLogic';
 import { AppTheme } from './types';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const ephemerisService = new EphemerisService('assets/ephe');
 
@@ -36,6 +38,7 @@ export function TransitCompositeApp() {
     const [theme, setTheme] = useState<AppTheme | undefined>(undefined);
     const [showResults, setShowResults] = useState(false);
     const [loading, setLoading] = useState(false);
+    const exportRef = useRef<HTMLDivElement>(null);
 
     // Transit date/time (UTC)
     const now = new Date();
@@ -195,6 +198,50 @@ export function TransitCompositeApp() {
         setTransitChart(null);
     };
 
+    const handleExportPng = async () => {
+        if (!exportRef.current) return;
+        try {
+            const canvas = await html2canvas(exportRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff'
+            });
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `transit-${getChartName(selectedBirth)}-${transitDate}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) {
+            console.error('Error exporting PNG', e);
+        }
+    };
+
+    const handleExportPdf = async () => {
+        if (!exportRef.current) return;
+        try {
+            const canvas = await html2canvas(exportRef.current, {
+                scale: 2,
+                backgroundColor: '#ffffff'
+            });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'landscape' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 30;
+            const imgWidth = pageWidth - margin * 2;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            const finalHeight = Math.min(imgHeight, pageHeight - margin * 2);
+            const finalWidth = (finalHeight / imgHeight) * imgWidth;
+
+            pdf.addImage(imgData, 'PNG', margin, margin, finalWidth, finalHeight);
+            pdf.save(`transit-${getChartName(selectedBirth)}-${transitDate}.pdf`);
+        } catch (e) {
+            console.error('Error exporting PDF', e);
+        }
+    };
+
     const getChartName = (id: number | null) => {
         if (id === null) return 'Not selected';
         const chart = savedCharts.find(c => c.id === id);
@@ -319,21 +366,14 @@ export function TransitCompositeApp() {
         );
     }
 
-    // Render results: 3-bodygraph layout
+    // Render results
     const themeCode = connectionAnalysis?.compositeCenters.code || '';
+    const birthChartInfo = savedCharts.find(c => c.id === selectedBirth);
 
     return (
         <div className="ahd-transit-composite-results" style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px', fontFamily: theme?.fontFamily }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5em' }}>
-                <div>
-                    <h2 style={{ margin: 0, color: theme?.textColor || '#1f2937' }}>
-                        {getChartName(selectedBirth)} + Transit ({transitDate} {transitTime} UTC)
-                    </h2>
-                    <p style={{ margin: '0.25em 0 0', color: '#6b7280', fontSize: '0.9em' }}>
-                        Composite Theme: <strong>{themeCode}</strong>
-                    </p>
-                </div>
+            {/* Action buttons - hidden in export */}
+            <div className="no-export" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75em', marginBottom: '1em' }}>
                 <button
                     onClick={handleReset}
                     style={{
@@ -347,109 +387,213 @@ export function TransitCompositeApp() {
                 >
                     New Composite
                 </button>
+                <button
+                    onClick={handleExportPng}
+                    style={{
+                        padding: '0.5em 1em',
+                        backgroundColor: '#1f2937',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Export PNG
+                </button>
+                <button
+                    onClick={handleExportPdf}
+                    style={{
+                        padding: '0.5em 1em',
+                        backgroundColor: '#1f2937',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Export PDF
+                </button>
             </div>
 
-            {/* 3-column layout: Birth | Composite | Transit */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: '1.5em', alignItems: 'flex-start' }}>
-                {/* Birth Chart */}
-                <div style={{ backgroundColor: '#fff', padding: '1em', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ margin: '0 0 0.75em', fontSize: '1em', color: theme?.textColor || '#1f2937' }}>
-                        {getChartName(selectedBirth)}
-                    </h3>
+            {/* Exportable content - landscape layout, width driven by content so nothing is clipped */}
+            <div 
+                ref={exportRef} 
+                style={{ 
+                    backgroundColor: '#fff', 
+                    padding: '12px 16px', 
+                    borderRadius: '8px',
+                    minHeight: '750px',
+                    boxSizing: 'border-box',
+                    margin: '0 auto',
+                    overflow: 'hidden'
+                }}
+            >
+                {/* Header */}
+                <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                    <h2 style={{ margin: 0, color: '#c026d3', fontSize: '18px', fontWeight: 600 }}>
+                        Transit + Birth Composite
+                    </h2>
+                    <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '12px' }}>
+                        {getChartName(selectedBirth)} • Transit: {transitDate} {transitTime} UTC • Theme: <strong>{themeCode}</strong>
+                    </p>
+                </div>
+
+                {/* Main layout: Birth info | Design Panel | Composite | Personality Panel | Transit info */}
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 160px 1fr 160px 1fr', 
+                    gap: '8px', 
+                    alignItems: 'flex-start'
+                }}>
+                    
+                    {/* Birth Chart Info (left) */}
+                    <div style={{ fontSize: '9px', color: 'theme?.textColor' }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '11px', color: 'theme?.textColor' }}>
+                            {getChartName(selectedBirth)}
+                        </h3>
+                        {birthChartInfo && (
+                            <div style={{ lineHeight: 1.3 }}>
+                                <div>Birth: {birthChartInfo.input.date}</div>
+                                <div>Time: {birthChartInfo.input.time}</div>
+                                <div style={{ wordBreak: 'break-word' }}>{birthChartInfo.input.location}</div>
+                                {birthChart && (
+                                    <>
+                                        <div style={{ marginTop: '3px' }}>Type: {birthChart.type}</div>
+                                        <div>Profile: {birthChart.profile}</div>
+                                        <div>Authority: {birthChart.authority}</div>
+                                        <div>Definition: {birthChart.definition}</div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        {birthChart && (
+                            <div style={{ marginTop: '6px', maxWidth: '80px', transform: 'scale(0.7)', transformOrigin: 'top left' }}>
+                                <Bodygraph data={birthChart} theme={theme} mini />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Design Panel - Birth design only (no transit design gates) */}
                     {birthChart && (
-                        <>
-                            <Bodygraph data={birthChart} theme={theme} mini />
-                            <div style={{ marginTop: '1em' }}>
-                                <PlanetPanel
-                                    activations={birthChart.birthActivations}
-                                    side="personality"
-                                    color={theme?.personalityColor || '#000'}
-                                    textColor={theme?.textColor || '#111827'}
-                                    fontFamily={theme?.fontFamily}
-                                />
-                                <PlanetPanel
-                                    activations={birthChart.designActivations}
-                                    side="design"
-                                    color={theme?.designColor || '#ff0000'}
-                                    textColor={theme?.textColor || '#111827'}
-                                    fontFamily={theme?.fontFamily}
-                                />
-                            </div>
-                        </>
+                        <ConnectionPlanetPanel
+                            activationsA={birthChart.designActivations}
+                            activationsB={{} as Record<string, Activation>}
+                            side="design"
+                            colorA={theme?.designColor || '#ff0000'}
+                            colorB={theme?.designColor || '#ff0000'}
+                            fontFamily={theme?.fontFamily}
+                        />
                     )}
+
+                    {/* Composite Bodygraph (center) */}
+                    <div style={{ textAlign: 'center' }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '11px', color: theme?.textColor || '#1f2937' }}>
+                            Composite
+                        </h3>
+                        {compositeData && connectionAnalysis && (
+                            <div style={{ maxWidth: '280px', margin: '0 auto' }}>
+                                <Bodygraph data={compositeData} connectionAnalysis={connectionAnalysis} theme={theme} />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Personality Panel - Birth + Transit personality activations */}
+                    {birthChart && transitChart && (
+                        <ConnectionPlanetPanel
+                            activationsA={birthChart.birthActivations}
+                            activationsB={transitChart.birthActivations}
+                            side="personality"
+                            colorA={theme?.personalityColor || '#000'}
+                            colorB={theme?.personalityColor || '#000'}
+                            fontFamily={theme?.fontFamily}
+                        />
+                    )}
+
+                    {/* Transit Info (right) */}
+                    <div style={{ fontSize: '9px', textAlign:'right', color: theme?.textColor }}>
+                        <h3 style={{ margin: '0 0 4px', fontSize: '11px', color: 'theme?.textColor' }}>
+                            Transit
+                        </h3>
+                        <div style={{ lineHeight: 1.3 }}>
+                            <div>Date: {transitDate}</div>
+                            <div>Time: {transitTime} UTC</div>
+                            <div>Location: 0° lat, 0° lon</div>
+                        </div>
+                        {transitChart && (
+                            <div style={{ marginTop: '6px', maxWidth: '80px', transform: 'scale(0.7)', transformOrigin: 'top right' }}>
+                                <Bodygraph data={transitChart} theme={theme} mini />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Composite Center */}
-                <div style={{ backgroundColor: '#fff', padding: '1em', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ margin: '0 0 0.75em', fontSize: '1em', color: theme?.textColor || '#1f2937', textAlign: 'center' }}>
-                        Transit Composite
-                    </h3>
-                    {compositeData && connectionAnalysis && (
-                        <>
-                            <Bodygraph data={compositeData} connectionAnalysis={connectionAnalysis} theme={theme} />
+                {/* Transit Activation Section - Compact */}
+                {connectionAnalysis && (
+                    <div style={{ marginTop: '10px', padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+                        <h3 style={{ margin: '0 0 6px', textAlign: 'center' }}>What the Transit Activates</h3>
+                        
+                        {/* Theme info */}
+                        <div style={{ textAlign: 'center', marginBottom: '6px' }}>
+                            <strong>Theme: {themeCode}</strong>
+                            <span style={{ marginLeft: '6px', color: '#6b7280' }}>
+                                ({connectionAnalysis.compositeCenters.definedCenters.size} defined, {connectionAnalysis.compositeCenters.openCenters.size} open)
+                            </span>
+                        </div>
 
-                            {/* Connection Legend */}
-                            <div style={{ marginTop: '1em', padding: '0.75em', backgroundColor: '#f9fafb', borderRadius: '8px', fontSize: '0.85em' }}>
-                                <div style={{ fontWeight: 600, marginBottom: '0.5em' }}>What the Transit Activates:</div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1em' }}>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: theme?.connectionElectromagneticColor || '#8b5cf6', borderRadius: 2, marginRight: 4 }}></span> Electromagnetic ({connectionAnalysis.electromagnetic.length})</span>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: theme?.connectionCompromiseColor || '#f59e0b', borderRadius: 2, marginRight: 4 }}></span> Compromise ({connectionAnalysis.compromise.length})</span>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: theme?.connectionCompanionColor || '#3b82f6', borderRadius: 2, marginRight: 4 }}></span> Companion ({connectionAnalysis.companion.length})</span>
-                                    <span><span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: theme?.connectionDominanceColor || '#10b981', borderRadius: 2, marginRight: 4 }}></span> Dominance ({connectionAnalysis.dominance.length})</span>
+                        {/* Channel type columns */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                            {/* Electromagnetic */}
+                            <div>
+                                <div style={{ fontWeight: 600, color: theme?.connectionElectromagneticColor || '#8b5cf6', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: theme?.connectionElectromagneticColor || '#8b5cf6', borderRadius: 1 }}></span>
+                                    Electromagnetic ({connectionAnalysis.electromagnetic.length})
                                 </div>
+                                {connectionAnalysis.electromagnetic.map(ch => (
+                                    <div key={ch.id} style={{ marginLeft: '12px' }}>{ch.id}</div>
+                                ))}
                             </div>
 
-                            {/* Channel Lists */}
-                            <div style={{ marginTop: '1em', fontSize: '0.85em' }}>
-                                {connectionAnalysis.electromagnetic.length > 0 && (
-                                    <div style={{ marginBottom: '0.75em' }}>
-                                        <strong style={{ color: theme?.connectionElectromagneticColor || '#8b5cf6' }}>Electromagnetic:</strong>
-                                        <span style={{ marginLeft: '0.5em' }}>{connectionAnalysis.electromagnetic.map(c => c.id).join(', ')}</span>
-                                    </div>
-                                )}
-                                {connectionAnalysis.compromise.length > 0 && (
-                                    <div style={{ marginBottom: '0.75em' }}>
-                                        <strong style={{ color: theme?.connectionCompromiseColor || '#f59e0b' }}>Compromise:</strong>
-                                        <span style={{ marginLeft: '0.5em' }}>{connectionAnalysis.compromise.map(c => c.id).join(', ')}</span>
-                                    </div>
-                                )}
-                                {connectionAnalysis.companion.length > 0 && (
-                                    <div style={{ marginBottom: '0.75em' }}>
-                                        <strong style={{ color: theme?.connectionCompanionColor || '#3b82f6' }}>Companion:</strong>
-                                        <span style={{ marginLeft: '0.5em' }}>{connectionAnalysis.companion.map(c => c.id).join(', ')}</span>
-                                    </div>
-                                )}
-                                {connectionAnalysis.dominance.length > 0 && (
-                                    <div style={{ marginBottom: '0.75em' }}>
-                                        <strong style={{ color: theme?.connectionDominanceColor || '#10b981' }}>Dominance:</strong>
-                                        <span style={{ marginLeft: '0.5em' }}>{connectionAnalysis.dominance.map(c => c.id).join(', ')}</span>
-                                    </div>
-                                )}
+                            {/* Compromise */}
+                            <div>
+                                <div style={{ fontWeight: 600, color: theme?.connectionCompromiseColor || '#f59e0b', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: theme?.connectionCompromiseColor || '#f59e0b', borderRadius: 1 }}></span>
+                                    Compromise ({connectionAnalysis.compromise.length})
+                                </div>
+                                {connectionAnalysis.compromise.map(ch => (
+                                    <div key={ch.id} style={{ marginLeft: '12px' }}>{ch.id}</div>
+                                ))}
                             </div>
-                        </>
-                    )}
-                </div>
 
-                {/* Transit Chart */}
-                <div style={{ backgroundColor: '#fff', padding: '1em', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ margin: '0 0 0.75em', fontSize: '1em', color: theme?.textColor || '#1f2937' }}>
-                        Transit ({transitDate})
-                    </h3>
-                    {transitChart && (
-                        <>
-                            <Bodygraph data={transitChart} theme={theme} mini />
-                            <div style={{ marginTop: '1em' }}>
-                                <PlanetPanel
-                                    activations={transitChart.birthActivations}
-                                    side="personality"
-                                    color={theme?.personalityColor || '#000'}
-                                    textColor={theme?.textColor || '#111827'}
-                                    fontFamily={theme?.fontFamily}
-                                />
+                            {/* Companion */}
+                            <div>
+                                <div style={{ fontWeight: 600, color: theme?.connectionCompanionColor || '#3b82f6', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: theme?.connectionCompanionColor || '#3b82f6', borderRadius: 1 }}></span>
+                                    Companion ({connectionAnalysis.companion.length})
+                                </div>
+                                {connectionAnalysis.companion.map(ch => (
+                                    <div key={ch.id} style={{ marginLeft: '12px' }}>{ch.id}</div>
+                                ))}
                             </div>
-                        </>
-                    )}
-                </div>
+
+                            {/* Dominance */}
+                            <div>
+                                <div style={{ fontWeight: 600, color: theme?.connectionDominanceColor || '#10b981', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ display: 'inline-block', width: 8, height: 8, backgroundColor: theme?.connectionDominanceColor || '#10b981', borderRadius: 1 }}></span>
+                                    Dominance ({connectionAnalysis.dominance.length})
+                                </div>
+                                {connectionAnalysis.dominance.map(ch => (
+                                    <div key={ch.id} style={{ marginLeft: '12px' }}>{ch.id}</div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {connectionAnalysis.compositeCenters.definedByComposite.size > 0 && (
+                            <div style={{ marginTop: '6px', textAlign: 'center', color: '#059669' }}>
+                                Centers activated by transit: {[...connectionAnalysis.compositeCenters.definedByComposite].join(', ')}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

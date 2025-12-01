@@ -39,6 +39,7 @@ export const Bodygraph: React.FC<BodygraphProps> = ({ data, connectionAnalysis, 
     const fontFamily = theme?.fontFamily || 'sans-serif';
     const activeGateCircleColor = theme?.activeGateCircleColor || '#ffffff';
     const isTransit = (data as any)?.isTransit;
+    const isMini = !!_mini;
 
     // Connection mode: use analysis results to color channels/gates
     const getConnectionGateColor = (gateId: number): string => {
@@ -187,7 +188,7 @@ export const Bodygraph: React.FC<BodygraphProps> = ({ data, connectionAnalysis, 
     };
 
     return (
-        <div className="bodygraph-container" style={{ fontFamily, width: '100%', minWidth: '250px' }}>
+        <div className="bodygraph-container" style={{ fontFamily, width: '100%', minWidth: isMini ? '250px' : '300px' }}>
             <svg id="bodygraph-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 275.338 421.458" style={{ width: '100%', height: 'auto', display: 'block' }}>
                 <defs>
                     {/* Striped pattern for gates active in both Design and Personality */}

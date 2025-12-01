@@ -54,7 +54,7 @@ export interface AppTheme {
     connectionDominanceColor?: string;
 }
 
-// Zodiac symbols for display
+// Zodiac symbols for display (Unicode fallback)
 export const ZODIAC_SYMBOLS: Record<string, string> = {
     'Aries': '♈',
     'Taurus': '♉',
@@ -70,7 +70,7 @@ export const ZODIAC_SYMBOLS: Record<string, string> = {
     'Pisces': '♓'
 };
 
-// Planet symbols for display
+// Planet symbols for display (Unicode fallback)
 export const PLANET_SYMBOLS: Record<string, string> = {
     'Sun': '☉',
     'Earth': '⊕',
@@ -87,4 +87,44 @@ export const PLANET_SYMBOLS: Record<string, string> = {
     'SouthNode': '☋',
     'Chiron': '⚷',
     'Black Moon Lilith': '⚸'
+};
+
+// Icon file names for SVG icons (in Resources/Icons folder)
+export const ZODIAC_ICON_FILES: Record<string, string> = {
+    'Aries': 'Aries.svg',
+    'Taurus': 'Taurus.svg',
+    'Gemini': 'Gemini.svg',
+    'Cancer': 'Cancer.svg',
+    'Leo': 'Leo.svg',
+    'Virgo': 'Virgo.svg',
+    'Libra': 'Libra.svg',
+    'Scorpio': 'Scorpio.svg',
+    'Sagittarius': 'Sagittarius.svg',
+    'Capricorn': 'Capricorn.svg',
+    'Aquarius': 'Aquarius.svg',
+    'Pisces': 'Pisces.svg'
+};
+
+export const PLANET_ICON_FILES: Record<string, string> = {
+    'Sun': 'Sun.svg',
+    'Earth': 'Earth.svg',
+    'Moon': 'Moon.svg',
+    'Mercury': 'Mercury.svg',
+    'Venus': 'Venus.svg',
+    'Mars': 'Mars.svg',
+    'Jupiter': 'Jupiter.svg',
+    'Saturn': 'Saturn.svg',
+    'Uranus': 'Uranus.svg',
+    'Neptune': 'Neptune.svg',
+    'Pluto': 'Pluto.svg',
+    'NorthNode': 'North Node.svg',
+    'SouthNode': 'South Node.svg',
+    'Chiron': 'Chiron.svg',
+    'Black Moon Lilith': 'BlackMoon Lilith.svg'
+};
+
+// Helper to get icon URL
+export const getIconUrl = (iconFile: string): string => {
+    const pluginUrl = (window as any).ahdSettings?.pluginUrl || '';
+    return `${pluginUrl}Resources/Icons/${iconFile}`;
 };

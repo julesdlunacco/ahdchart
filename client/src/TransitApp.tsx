@@ -740,97 +740,94 @@ export function TransitApp() {
                 </form>
             ) : (
                 <div className="ahd-results-view">
-                    {/* Export region: header + chart grid */}
+                    {/* Action buttons - excluded from exports via placement outside chartExportRef */}
+                    <div className="no-export" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5em', marginBottom: '1em' }}>
+                        <button
+                            onClick={() => {
+                                setChartData(null);
+                                setResult(null);
+                            }}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: '#6b7280',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                                fontSize: '0.875em'
+                            }}
+                        >
+                            New Transit
+                        </button>
+                        <button
+                            onClick={handleExportPng}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: '#1f2937',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                                fontSize: '0.875em'
+                            }}
+                        >
+                            Export PNG
+                        </button>
+                        <button
+                            onClick={handleExportPdf}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: '#111827',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: '500',
+                                fontSize: '0.875em'
+                            }}
+                        >
+                            Export PDF
+                        </button>
+                    </div>
+
+                    {/* Export region: title + chart grid */}
                     <div ref={chartExportRef}>
                         <div
                             style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: '1.5em',
-                                paddingBottom: '1em',
-                                borderBottom: '1px solid #e5e7eb'
+                                marginBottom: '1.25em',
+                                textAlign: 'center'
                             }}
                         >
-                            <div>
-                                <h2
-                                    style={{
-                                        margin: 0,
-                                        fontSize: '1.5em',
-                                        fontWeight: '600',
-                                        color: theme?.textColor || '#1f2937'
-                                    }}
-                                >
-                                    Transit for {input.location || '0° lat, 0° lon (UTC)'}
-                                </h2>
-                                <p
-                                    style={{
-                                        margin: '4px 0 0',
-                                        fontSize: '0.875em',
-                                        color: '#6b7280'
-                                    }}
-                                >
-                                    {input.date} {input.time} • Transit (UTC)
-                                </p>
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.5em', alignItems: 'center' }}>
-                                <button
-                                    onClick={() => {
-                                        setChartData(null);
-                                        setResult(null);
-                                    }}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: '#6b7280',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontWeight: '500',
-                                        fontSize: '0.875em'
-                                    }}
-                                >
-                                    New Transit
-                                </button>
-                                <button
-                                    onClick={handleExportPng}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: '#1f2937',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontWeight: '500',
-                                        fontSize: '0.875em'
-                                    }}
-                                >
-                                    Export PNG
-                                </button>
-                                <button
-                                    onClick={handleExportPdf}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: '#111827',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontWeight: '500',
-                                        fontSize: '0.875em'
-                                    }}
-                                >
-                                    Export PDF
-                                </button>
-                            </div>
+                            <h2
+                                style={{
+                                    margin: 0,
+                                    fontSize: '1.5em',
+                                    fontWeight: '600',
+                                    color: theme?.textColor || '#1f2937'
+                                }}
+                            >
+                                Transit
+                            </h2>
+                            <p
+                                style={{
+                                    margin: '4px 0 0',
+                                    fontSize: '0.9em',
+                                    color: '#6b7280'
+                                }}
+                            >
+                                {input.date} {input.time} • UTC
+                            </p>
                         </div>
 
                         <div
                             style={{
                                 display: 'grid',
-                                gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
+                                gridTemplateColumns: '350px 160px',
                                 gap: '1.5em',
-                                alignItems: 'flex-start'
+                                alignItems: 'flex-start',
+                                justifyContent: 'center',
                             }}
                         >
                             <div
